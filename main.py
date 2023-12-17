@@ -28,19 +28,21 @@ class Timeslot(Predicate):
     end_time = TimeField
 
 class Module(Predicate):
-    mod_code = StringField
+    mod_code = StringField(index=True)
+    examiner_id = ConstantField
     exam_len = IntegerField
-    exam_num = IntegerField
-
+    
 class Examiner(Predicate):
+    examiner_id = ConstantField(index=True)
     name = ConstantField
 
 class Student(Predicate):
+    student_id = ConstantField(index=True)
     name = ConstantField
     module_code = StringField
 
 class Examinerschedule(Predicate):
-    examiner = ConstantField
+    examiner_id = ConstantField
     date = DateField
     start_time = TimeField
     end_time = TimeField
@@ -49,46 +51,72 @@ class Availability (Predicate):
     date = DateField
     start_time = TimeField
     end_time = TimeField
-    examiner1 = ConstantField
-    # examiner2 = ConstantField
+    examiner = ConstantField
     duration = TimeField
 
 class Examination(Predicate):
     date = DateField
     start_time = TimeField
     end_time = TimeField
-    examiner1 = ConstantField
-    # examiner2 = ConstantField
+    examiner = ConstantField
     student_name = ConstantField
     module = StringField
-
-class Stmod(Predicate):
-    student_name = ConstantField
-    module = StringField
-    duration = TimeField
 
 #Control object controls the operations of ASP solver, unifier specifies which symbols turn into pred instances
-ctrl = Control(unifier=[Module, Examiner, Student, Examinerschedule, Availability, Examination, Stmod])
+ctrl = Control(unifier=[Module, Examiner, Student, Examinerschedule, Availability, Examination])
 ctrl.load("scheduling.lp")
 
+timeslot = [
+    Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(10,30), end_time=datetime.time(11,00)), 
+    Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(11,10), end_time=datetime.time(11,40)), 
+    Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(12,10), end_time=datetime.time(12,40)), 
+    Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(14,00), end_time=datetime.time(14,20)),
+    Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(14,30), end_time=datetime.time(14,50)),
+    Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(15,00), end_time=datetime.time(15,30)),
+    Timeslot(date=datetime.date(2023,11,24), start_time=datetime.time(15,40), end_time=datetime.time(16,00)),
+    Timeslot(date=datetime.date(2023,11,24), start_time=datetime.time(10,30), end_time=datetime.time(11,00)), 
+    Timeslot(date=datetime.date(2023,11,24), start_time=datetime.time(11,10), end_time=datetime.time(11,40)), 
+    Timeslot(date=datetime.date(2023,11,24), start_time=datetime.time(12,10), end_time=datetime.time(12,40)), 
+    Timeslot(date=datetime.date(2023,11,24), start_time=datetime.time(14,00), end_time=datetime.time(14,20)),
+    Timeslot(date=datetime.date(2023,11,24), start_time=datetime.time(14,30), end_time=datetime.time(14,50)),
+    Timeslot(date=datetime.date(2023,11,24), start_time=datetime.time(15,00), end_time=datetime.time(15,30)),
+    Timeslot(date=datetime.date(2023,11,24), start_time=datetime.time(15,40), end_time=datetime.time(16,00))]
 
-examiners = ['ana', 'liz']
-students = {'yana': 'CMS-LM-101', 'blake': 'CMS-LM-101', 'linda': 'CS-Dipl-211'}
+module = [
+    Module(mod_code = "CMS-LM-101", exam_len = 30, examiner_id = "EA001"),
+    Module(mod_code = "CMS-LM-101", exam_len = 30, examiner_id = "EJ003"),
+    Module(mod_code = "CMS-LM-101", exam_len = 30, examiner_id = "EL002"),
+    Module(mod_code = "CS-Dipl-211", exam_len = 20, examiner_id = "EL002"),
+    Module(mod_code = "CS-Dipl-211", exam_len = 20, examiner_id = "EL004")
+]
 
-timeslot = [Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(10,30), end_time=datetime.time(11,00)), 
-Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(11,10), end_time=datetime.time(11,40)), 
-Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(12,10), end_time=datetime.time(12,40)), 
-Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(14,00), end_time=datetime.time(14,20)),
-Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(14,30), end_time=datetime.time(14,50)),
-Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(15,00), end_time=datetime.time(15,30)),
-Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(15,40), end_time=datetime.time(16,00))]
-modules = [Module(mod_code = "CMS-LM-101", exam_len = 30, exam_num = 2),
-Module(mod_code = "CS-Dipl-211", exam_len = 20, exam_num = 1)]
-examiner = [ Examiner(name=n) for n in examiners ]
-student = [ Student(name=n, module_code=m) for n,m in students.items() ]
-examinerschedule = [ Examinerschedule(examiner='ana', date=datetime.date(2023,11,23), start_time=datetime.time(11,00), end_time=datetime.time(15,30)), Examinerschedule(examiner='liz', date=datetime.date(2023,11,23), start_time=datetime.time(12,00), end_time=datetime.time(16,00))]
+examiner = [
+    Examiner(examiner_id = "EA001", name = "Anna"), 
+    Examiner(examiner_id = "EL002", name = "Liz"), 
+    Examiner(examiner_id = "EJ003", name = "Jonathan"), 
+    Examiner(examiner_id = "EL004", name = "Leon")
+]
 
-instance = FactBase(timeslot + modules + examiner + student + examinerschedule)
+student = [
+    # Student(student_id = "J1001", name = "Julia", module_code = "CMS-LM-101"), 
+    # Student(student_id = "N1002", name = "Nathan", module_code = "CMS-LM-101"), 
+    Student(student_id = "S1003", name = "Sebastian", module_code = "CMS-LM-101"),
+    Student(student_id = "L1004", name = "Lisa", module_code = "CMS-LM-101"),
+    # Student(student_id = "J1005", name = "Julia", module_code = "CS-Dipl-211"), 
+    # Student(student_id = "L1006", name = "Leon", module_code = "CS-Dipl-211"), 
+    Student(student_id = "P1007", name = "Petra", module_code = "CS-Dipl-211"),
+    Student(student_id = "A1008", name = "Antony", module_code = "CS-Dipl-211")
+]
+
+examinerschedule = [ 
+    Examinerschedule(examiner_id="EA001", date=datetime.date(2023,11,23), start_time=datetime.time(11,00), end_time=datetime.time(15,30)), 
+    Examinerschedule(examiner_id="EL002", date=datetime.date(2023,11,23), start_time=datetime.time(10,00), end_time=datetime.time(14,00)),
+    Examinerschedule(examiner_id="EL002", date=datetime.date(2023,11,24), start_time=datetime.time(12,00), end_time=datetime.time(16,00)),
+    Examinerschedule(examiner_id="EJ003", date=datetime.date(2023,11,23), start_time=datetime.time(11,00), end_time=datetime.time(15,30)), 
+    Examinerschedule(examiner_id="EL004", date=datetime.date(2023,11,24), start_time=datetime.time(12,00), end_time=datetime.time(16,00))
+]
+
+instance = FactBase(timeslot + module + examiner + student + examinerschedule)
 
 ctrl.add_facts(instance)
 ctrl.ground([("base", [])])
@@ -103,9 +131,6 @@ ctrl.solve(on_model=on_model)
 if not solution:
     raise ValueError("No solution found")
 
-#querying the solution
-query=solution.query(Stmod)
-print(list(query.all()))
 
 query=solution.query(Examiner)
 print(list(query.all()))
@@ -116,10 +141,10 @@ print(list(query.all()))
 query=solution.query(Examinerschedule)
 print(list(query.all()))
 
-query=solution.query(Availability)
+query=solution.query(Availability).order_by(Availability[3])
 print(list(query.all()))
 
-query=solution.query(Examination)
+query=solution.query(Examination).order_by(Examination[3])
 print('\n------------Examination Scheduling-----------------\n')
 for exam_item in list(query.all()):
     print(exam_item, '\n')
