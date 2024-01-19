@@ -2,7 +2,7 @@
 availability(D,ST, ET, Examiner, ET-ST) :- timeslot(D, ST, ET), examinerschedule(Examiner, D, ST1, ET1), ST >= ST1, ET1 >= ET.
 
 %create examination with examiner assignment according to the module requirement
-examination(D, ST, ET, Examiner, SID, M) : availability(D, ST, ET, Examiner, Dur) :- student(SID, S, M), module(M, Examiner, Dur).
+examination(D, ST, ET, Examiner, SID, M) : availability(D, ST, ET, Examiner, Dur), course(Course, Examiner) :- student(SID, S, M), module(M, Dur, Course), studentCourses(SID, Course).
 
 %constraints to ensure a student doesn't have examinations on different timeslots
 :- student(SID, S, M), examination(D1, ST1, ET1, _, SID, M), examination(D2, ST2, ET2, _, SID, M), D1 != D2.
