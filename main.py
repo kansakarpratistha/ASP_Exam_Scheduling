@@ -1,7 +1,8 @@
-from clorm import Predicate, ConstantField, IntegerField, FactBase, ph1_, StringField
+from clorm import Predicate, ConstantField, IntegerField, FactBase, ph1_, StringField, alias, in_
 from clorm.clingo import Control
 import datetime
 import pandas as pd
+import csv
 # from calenderdates import EventsExtract
 
 #get events from google calendar
@@ -60,7 +61,7 @@ class Availability (Predicate):
     start_time = TimeField
     end_time = TimeField
     examiner = ConstantField
-    duration = TimeField
+    duration = IntegerField
 
 class Examination(Predicate):
     date = DateField
@@ -71,119 +72,152 @@ class Examination(Predicate):
     module = StringField
 
 
-
-
-
 #Control object controls the operations of ASP solver, unifier specifies which symbols turn into pred instances
-ctrl = Control(unifier=[Module, Examiner, Student, Examinerschedule, Availability, Examination])
+ctrl = Control(unifier=[Timeslot, Module, Examiner, Student, Examinerschedule, Course, Availability, Examination, StudentCourses])
+
+ctrl.configuration.keys
+['tester', 'solve', 'asp', 'solver', 'configuration', 'share',
+ 'learn_explicit', 'sat_prepro', 'stats', 'parse_ext', 'parse_maxsat', 'time_limit']
+ctrl.configuration.solve.keys
+['solve_limit', 'parallel_mode', 'global_restarts', 'distribute',
+ 'integrate', 'enum_mode', 'project', 'models', 'opt_mode']
+# ctrl.keys['time_limit']
+# ctrl.configuration.solve.description("models")
+'Compute at most %A models (0 for all)\n'
+#limit the number of models to 10
+ctrl.configuration.solve.models = 100
 ctrl.load("scheduling.lp")
 
-timeslot = [
-    Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(10,30), end_time=datetime.time(11,00)), 
-    Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(11,10), end_time=datetime.time(11,40)), 
-    Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(12,10), end_time=datetime.time(12,40)), 
-    Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(14,00), end_time=datetime.time(14,20)),
-    Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(14,30), end_time=datetime.time(14,50)),
-    Timeslot(date=datetime.date(2023,11,23), start_time=datetime.time(15,00), end_time=datetime.time(15,30)),
-    Timeslot(date=datetime.date(2023,11,24), start_time=datetime.time(15,40), end_time=datetime.time(16,00)),
-    Timeslot(date=datetime.date(2023,11,24), start_time=datetime.time(10,30), end_time=datetime.time(11,00)), 
-    Timeslot(date=datetime.date(2023,11,24), start_time=datetime.time(11,10), end_time=datetime.time(11,40)), 
-    Timeslot(date=datetime.date(2023,11,24), start_time=datetime.time(12,10), end_time=datetime.time(12,40)), 
-    Timeslot(date=datetime.date(2023,11,24), start_time=datetime.time(14,00), end_time=datetime.time(14,20)),
-    Timeslot(date=datetime.date(2023,11,24), start_time=datetime.time(14,30), end_time=datetime.time(14,50)),
-    Timeslot(date=datetime.date(2023,11,24), start_time=datetime.time(15,00), end_time=datetime.time(15,30)),
-    Timeslot(date=datetime.date(2023,11,24), start_time=datetime.time(15,40), end_time=datetime.time(16,00))]
+timeslot_csv = open("timeslots.csv", "r")
+timeslot_data = list(csv.DictReader(timeslot_csv, delimiter=";"))
+timeslot_csv.close()
+timeslots=[]
+for slot in timeslot_data:
+    timeslots.append(Timeslot(date=datetime.datetime.strptime(slot['Date'], '%Y,%m,%d').date(), start_time=datetime.datetime.strptime(slot['Start_Time'], '%H,%M').time(), end_time=datetime.datetime.strptime(slot['End_Time'], '%H,%M').time()))
 
-course = [
-    Course(course_id = "AGT", examiner_id = "EA001"),
-    Course(course_id = "KRR", examiner_id = "EL002"),
-    Course(course_id = "KG", examiner_id = "EJ003"),
-    Course(course_id = "DL", examiner_id= "EL004")
-]
+course_csv = open("courses.csv", "r")
+course_data = list(csv.DictReader(course_csv, delimiter=","))
+course_csv.close()
+course = []
+for item in course_data:
+    course.append(Course(course_id=item['Course_id'], examiner_id=item['Examiner']))
 
-module = [
-    Module(mod_code = "CMS-LM-AI", exam_len = 30, course_id = "AGT"),
-    Module(mod_code = "CMS-LM-AI", exam_len = 30, course_id = "KRR"),
-    Module(mod_code = "CMS-LM-AI", exam_len = 30, course_id = "KG"),
-    Module(mod_code = "CS-Dipl-Comp", exam_len = 20, course_id = "AGT"),
-    Module(mod_code = "CS-Dipl-Comp", exam_len = 20, course_id = "DL")
-]
+module_csv = open("modules.csv", "r")
+module_data = list(csv.DictReader(module_csv, delimiter=","))
+module_csv.close()
+module = []
+for item in module_data:
+    module.append(Module(mod_code = item['Module_code'], exam_len = int(item['Duration']), course_id = item['Course_ID']))
 
-examiner = [
-    Examiner(examiner_id = "EA001", name = "Anna"), 
-    Examiner(examiner_id = "EL002", name = "Liz"), 
-    Examiner(examiner_id = "EJ003", name = "Jonathan"), 
-    Examiner(examiner_id = "EL004", name = "Leon")
-]
+examiner_csv = open("examiners.csv", "r")
+examiner_data = list(csv.DictReader(examiner_csv, delimiter=","))
+examiner_csv.close()
+examiner = []
+for item in examiner_data:
+    examiner.append(Examiner(examiner_id = item['ID'], name = item['Name']))
 
-student = [
-    # Student(student_id = "J1001", name = "Julia", module_code = "CMS-LM-AI"), 
-    # Student(student_id = "N1002", name = "Nathan", module_code = "CMS-LM-AI"), 
-    Student(student_id = "S1003", name = "Sebastian", module_code = "CMS-LM-AI"),
-    Student(student_id = "L1004", name = "Lisa", module_code = "CMS-LM-AI"),
-    # Student(student_id = "J1005", name = "Julia", module_code = "CS-Dipl-Comp"), 
-    # Student(student_id = "L1006", name = "Leon", module_code = "CS-Dipl-Comp"), 
-    Student(student_id = "P1007", name = "Petra", module_code = "CS-Dipl-Comp"),
-    Student(student_id = "A1008", name = "Antony", module_code = "CS-Dipl-Comp")
-]
+examiner_schedule_csv = open("examiner_schedules.csv", "r")
+examiner_schedule_data = list(csv.DictReader(examiner_schedule_csv, delimiter=";"))
+examiner_schedule = []
+for item in examiner_schedule_data:
+    examiner_schedule.append(Examinerschedule(examiner_id=item['ID'], date=datetime.datetime.strptime(item['Date'], '%Y,%m,%d').date(), 
+        start_time=datetime.datetime.strptime(item['From'], '%H,%M').time(),
+        end_time=datetime.datetime.strptime(item['To'], '%H,%M').time()))
 
-student_courses = [
-    StudentCourses(student_id = "S1003", course_id = "AGT"),
-    StudentCourses(student_id = "S1003", course_id = "KG"),
-    StudentCourses(student_id = "L1004", course_id = "KRR"),
-    StudentCourses(student_id = "L1004", course_id = "KG"),
-    StudentCourses(student_id = "P1007", course_id ="AGT"),
-    StudentCourses(student_id = "P1007", course_id = "DL"),
-    StudentCourses(student_id = "A1008", course_id = "AGT"),
-    StudentCourses(student_id = "A1008", course_id = "DL")
-]
+student_csv = open("students.csv", "r")
+student_data = list(csv.DictReader(student_csv, delimiter=","))
+student_csv.close()
+student = []
+for item in student_data:
+    student.append(Student(student_id = item['ID'], name = item['Name'], module_code = item['Module']))
 
-examinerschedule = [ 
-    Examinerschedule(examiner_id="EA001", date=datetime.date(2023,11,23), start_time=datetime.time(11,00), end_time=datetime.time(15,30)), 
-    Examinerschedule(examiner_id="EL002", date=datetime.date(2023,11,23), start_time=datetime.time(10,00), end_time=datetime.time(14,00)),
-    Examinerschedule(examiner_id="EL002", date=datetime.date(2023,11,24), start_time=datetime.time(12,00), end_time=datetime.time(16,00)),
-    Examinerschedule(examiner_id="EJ003", date=datetime.date(2023,11,23), start_time=datetime.time(11,00), end_time=datetime.time(15,30)), 
-    Examinerschedule(examiner_id="EL004", date=datetime.date(2023,11,23), start_time=datetime.time(13,00), end_time=datetime.time(16,00))
-]
+student_courses_csv = open("student_course.csv", "r")
+student_course_data = list(csv.DictReader(student_courses_csv, delimiter=","))
+student_courses = []
+for item in student_course_data:
+    student_courses.append(StudentCourses(student_id=item['ID'], course_id=item['Course']))
 
-instance = FactBase(timeslot + module + examiner + student + course + module + student_courses + examinerschedule)
+instance = FactBase(timeslots + module + examiner + student + examiner_schedule + course + student_courses)
 
 ctrl.add_facts(instance)
 ctrl.ground([("base", [])])
 
-solution = None
+solutions = []
+count=0
 def on_model(model):
-    global solution
-    solution = model.facts(atoms =True) #extracts only instances of the predicates that were registered with the unifier parameter, returns FactBase object  
+    global count
+    global solutions
+    count += 1
+    solution = model.facts(atoms =True)
+    solutions.append(solution)
 
 #on_model function will be triggered every time a model is found
-ctrl.solve(on_model=on_model)
-if not solution:
+ctrl.solve(on_model = on_model)
+
+
+        
+
+if solutions==[]:
     raise ValueError("No solution found")
 
 
-query=solution.query(Examiner)
-print(list(query.all()))
+for sol in solutions:
+    print(f"---------SOLUTION{solutions.index(sol)+1}-----------")
+    # mod_query = sol.query(Timeslot)
+    # df = pd.DataFrame(columns=['Date', 'Start', 'End'], data = list(mod_query.all()))
+    # print(df)
 
-query=solution.query(Student)
-print(list(query.all()))
+    # mod_query = sol.query(Examinerschedule)
+    # df = pd.DataFrame(columns=['EID', 'Date', 'Start', 'End'], data = list(mod_query.all()))
+    # print(df)
+    examination_query=sol.query(Examination).where(Examination.student_name=='130').select(Examination.date, Examination.start_time, Examination.end_time, Examination.examiner,Examination.student_name, Examination.module).distinct()
+    df = pd.DataFrame(columns=['Date', 'Start Time', 'End Time', 'Examiner', 'Student', 'Module'], data = list(examination_query.all()))
+    print(df)
 
-query=solution.query(Examinerschedule)
-print(list(query.all()))
+    # examiners_li = list(examination_query.select(Examination.examiner).all())
+    # availability_query=sol.query(Availability).where(in_(Availability.examiner, examiners_li))
+    # availability_query=sol.query(Availability).where((Availability.duration == 20) & in_(Availability.examiner, ['EA001','EL002','EM005'])).order_by(Availability.date)
+    # df = pd.DataFrame(columns=['Date', 'Start Time', 'End Time', 'Examiner', 'Duration'], data = list(availability_query.all()))
+    # print(df)
 
-query=solution.query(Availability).order_by(Availability[3])
-print(list(query.all()))
+print("Number of Models: ", len(solutions))
 
-query=solution.query(StudentCourses)
-print(list(query.all()))
+# query=solution.query(Examiner)
+# print('\n------------Examiners-----------------\n')
+# for exam_item in list(query.all()):
+#     print(exam_item, '.')
 
-query=solution.query(Examination).order_by(Examination[4])
-print('\n------------Examination Scheduling-----------------\n')
-for exam_item in list(query.all()):
-    print(exam_item, '\n')
+# query=solution.query(Timeslot)
+# print('\n------------Timeslots-----------------\n')
+# for exam_item in list(query.all()):
+#     print(exam_item, '.')
 
-query=solution.query(Examination).order_by(Examination[3])
-print('\n------------Examination Scheduling-----------------\n')
-for exam_item in list(query.all()):
-    print(exam_item, '\n')
+# query=solution.query(Examinerschedule)
+# print('\n------------Examinater Schedules-----------------\n')
+# for exam_item in list(query.all()):
+#     print(exam_item, '.')
 
+# # query=solution.query(Availability).order_by(Availability[3])
+# # print('\n------------Availabilities-----------------\n')
+# # for item in list(query.all()):
+# #     print(item, '\n')
+
+# query=solution.query(Student)
+# print('\n------------Students-----------------\n')
+# for exam_item in list(query.all()):
+#     print(exam_item, '.')
+
+# query=solution.query(StudentCourses)
+# print('\n------------StudentCourses-----------------\n')
+# for exam_item in list(query.all()):
+#     print(exam_item, '.')
+
+# query=solution.query(Course)
+# print('\n------------Courses-----------------\n')
+# for exam_item in list(query.all()):
+#     print(exam_item, '.')
+
+# query=solution.query(Module)
+# print('\n------------Modules-----------------\n')
+# for exam_item in list(query.all()):
+#     print(exam_item, '.')
