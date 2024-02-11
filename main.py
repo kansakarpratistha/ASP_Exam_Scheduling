@@ -162,23 +162,12 @@ if solutions==[]:
 
 
 for sol in solutions:
-    print(f"---------SOLUTION{solutions.index(sol)+1}-----------")
-    # mod_query = sol.query(Timeslot)
-    # df = pd.DataFrame(columns=['Date', 'Start', 'End'], data = list(mod_query.all()))
-    # print(df)
-
-    # mod_query = sol.query(Examinerschedule)
-    # df = pd.DataFrame(columns=['EID', 'Date', 'Start', 'End'], data = list(mod_query.all()))
-    # print(df)
-    examination_query=sol.query(Examination).where(Examination.student_name=='130').select(Examination.date, Examination.start_time, Examination.end_time, Examination.examiner,Examination.student_name, Examination.module).distinct()
+    print(f"\n\n\t\t--------- SOLUTION :: {solutions.index(sol)+1} -----------\n")
+ 
+    examination_query=sol.query(Examination).order_by(Examination.date, Examination.start_time)
     df = pd.DataFrame(columns=['Date', 'Start Time', 'End Time', 'Examiner', 'Student', 'Module'], data = list(examination_query.all()))
     print(df)
 
-    # examiners_li = list(examination_query.select(Examination.examiner).all())
-    # availability_query=sol.query(Availability).where(in_(Availability.examiner, examiners_li))
-    # availability_query=sol.query(Availability).where((Availability.duration == 20) & in_(Availability.examiner, ['EA001','EL002','EM005'])).order_by(Availability.date)
-    # df = pd.DataFrame(columns=['Date', 'Start Time', 'End Time', 'Examiner', 'Duration'], data = list(availability_query.all()))
-    # print(df)
 
 print("Number of Models: ", len(solutions))
 
