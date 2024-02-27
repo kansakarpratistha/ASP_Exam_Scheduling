@@ -68,25 +68,21 @@ class Examination(Predicate):
     start_time = TimeField
     end_time = TimeField
     examiner = ConstantField
-    student_name = ConstantField
+    student_id= ConstantField
     module = StringField
 
 
 #Control object controls the operations of ASP solver, unifier specifies which symbols turn into pred instances
 ctrl = Control(unifier=[Timeslot, Module, Examiner, Student, Examinerschedule, Course, Availability, Examination, StudentCourses])
-
 ctrl.configuration.keys
 ['tester', 'solve', 'asp', 'solver', 'configuration', 'share',
  'learn_explicit', 'sat_prepro', 'stats', 'parse_ext', 'parse_maxsat', 'time_limit']
 ctrl.configuration.solve.keys
 ['solve_limit', 'parallel_mode', 'global_restarts', 'distribute',
  'integrate', 'enum_mode', 'project', 'models', 'opt_mode']
-# ctrl.keys['time_limit']
-# ctrl.configuration.solve.description("models")
 'Compute at most %A models (0 for all)\n'
-#limit the number of models to 10
-ctrl.configuration.solve.models = 100
 ctrl.load("scheduling.lp")
+
 
 timeslot_csv = open("timeslots.csv", "r")
 timeslot_data = list(csv.DictReader(timeslot_csv, delimiter=";"))
@@ -152,61 +148,49 @@ def on_model(model):
     solutions.append(solution)
 
 #on_model function will be triggered every time a model is found
-ctrl.solve(on_model = on_model)
+ctrl.solve(on_model = on_model)        
+
+final_model = None
+def on_check_model(model):  
+    global final_model  
+    final_model = model.facts(atoms = True)
+
+def checkScheduling():
+    ctrl2 = Control(unifier=[Timeslot, Module, Examiner, Student, Examinerschedule, Course, Availability, Examination, StudentCourses])
+    ctrl2.configuration.keys
+    ['tester', 'solve', 'asp', 'solver', 'configuration', 'share',
+    'learn_explicit', 'sat_prepro', 'stats', 'parse_ext', 'parse_maxsat', 'time_limit']
+    ctrl2.configuration.solve.keys
+    ['solve_limit', 'parallel_mode', 'global_restarts', 'distribute',
+    'integrate', 'enum_mode', 'project', 'models', 'opt_mode']
+    'Compute at most %A models (0 for all)\n'
+    #limit the number of models to 10
+    ctrl2.configuration.solve.models = 200
+    ctrl2.load("scheduling2.lp")
+    ctrl2.add_facts(instance)
+    ctrl2.ground([("base", [])])
+    ctrl2.solve(on_model = on_check_model)     
 
 
-        
-
-if solutions==[]:
-    raise ValueError("No solution found")
-
-
-for sol in solutions:
-    print(f"\n\n\t\t--------- SOLUTION :: {solutions.index(sol)+1} -----------\n")
- 
-    examination_query=sol.query(Examination).order_by(Examination.date, Examination.start_time)
-    df = pd.DataFrame(columns=['Date', 'Start Time', 'End Time', 'Examiner', 'Student', 'Module'], data = list(examination_query.all()))
+if solutions==[]:  
+    # if no solution then run another lp file with choice rule for examination and without optimizations  
+    checkScheduling()
+    all_students = set(final_model.query(Student).select(Student.student_id).all())
+    pos_ex_query = final_model.query(Examination)
+    assigned_students = set(pos_ex_query.select(Examination.student_id).all())
+    df = pd.DataFrame(columns=['Date', 'Start Time', 'End Time', 'Examiner', 'Student', 'Module'], data = list(pos_ex_query.all()))
+    print("----!!!NOT ABLE TO SCHEDULE EXAMINATIONS FOR ALL STUDENTS!!!----")
+    print(f"Remaining students: {all_students - assigned_students}")
     print(df)
+else:
+    for sol in solutions:
+        print(f"\n\n\t\t--------- SOLUTION :: {solutions.index(sol)+1} -----------\n")
+        examination_query = sol.query(Examination)
+        # examination_query=sol.query(Examination, EA).join(Examination.student_name == EA.student_name, Examination.examiner < EA.examiner).select(Examination.date, Examination.start_time, Examination.end_time, Examination.examiner, EA.examiner, Examination.student_name, Examination.module).order_by(Examination.date, Examination.start_time)
+        df = pd.DataFrame(columns=['Date', 'Start Time', 'End Time', 'Examiner', 'Student', 'Module'], data = list(examination_query.all()))
+        print(df)
 
 
-print("Number of Models: ", len(solutions))
+    print("Number of Models: ", len(solutions))
 
-# query=solution.query(Examiner)
-# print('\n------------Examiners-----------------\n')
-# for exam_item in list(query.all()):
-#     print(exam_item, '.')
-
-# query=solution.query(Timeslot)
-# print('\n------------Timeslots-----------------\n')
-# for exam_item in list(query.all()):
-#     print(exam_item, '.')
-
-# query=solution.query(Examinerschedule)
-# print('\n------------Examinater Schedules-----------------\n')
-# for exam_item in list(query.all()):
-#     print(exam_item, '.')
-
-# # query=solution.query(Availability).order_by(Availability[3])
-# # print('\n------------Availabilities-----------------\n')
-# # for item in list(query.all()):
-# #     print(item, '\n')
-
-# query=solution.query(Student)
-# print('\n------------Students-----------------\n')
-# for exam_item in list(query.all()):
-#     print(exam_item, '.')
-
-# query=solution.query(StudentCourses)
-# print('\n------------StudentCourses-----------------\n')
-# for exam_item in list(query.all()):
-#     print(exam_item, '.')
-
-# query=solution.query(Course)
-# print('\n------------Courses-----------------\n')
-# for exam_item in list(query.all()):
-#     print(exam_item, '.')
-
-# query=solution.query(Module)
-# print('\n------------Modules-----------------\n')
-# for exam_item in list(query.all()):
-#     print(exam_item, '.')
+  
