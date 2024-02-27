@@ -1,4 +1,4 @@
-#Complex Exam Scheduling with Answer Set Programming (ASP)
+## Complex Exam Scheduling with Answer Set Programming (ASP)
 This exam scheduling tool is developed as a part of a research project under the guidance of **Dr. Sarah Alice Gaggl** at **TU Dresden**.
 
 This project focuses on scheduling complex examinations using the ASP (Answer Set Programming) solver Clingo. It utilizes Clorm to integrate Clingo encodings into Python object models, providing a seamless solution for exam scheduling.
