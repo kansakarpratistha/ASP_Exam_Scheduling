@@ -24,7 +24,7 @@ This project focuses on scheduling complex examinations using the ASP (Answer Se
 
 To run the tool, execute the following command:
     ```bash
-    py run main.py
+    py main.py
 
 ## Dependencies
 
