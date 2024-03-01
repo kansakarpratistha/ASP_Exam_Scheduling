@@ -3,16 +3,6 @@ from clorm.clingo import Control
 import datetime
 import pandas as pd
 import csv
-# from calenderdates import EventsExtract
-
-#get events from google calendar
-# EventsExtract = EventsExtract()
-# events = EventsExtract.main()
-
-
-#using python classes to represent clingo predicates. clorm provides Predicate base class for this purpose.
-#Clorm provides 3 field classes that represent how logical term is converted to and from python
-#number of fields and their order of declaration must match the position of each term in the ASP predicate
 
 #for representing datetime to and from python-clingo
 class DateField(StringField):
@@ -71,6 +61,8 @@ class Examination(Predicate):
     student_id= ConstantField
     module = StringField
 
+class Penalty(Predicate):
+    s = ConstantField
 
 #Control object controls the operations of ASP solver, unifier specifies which symbols turn into pred instances
 ctrl = Control(unifier=[Timeslot, Module, Examiner, Student, Examinerschedule, Course, Availability, Examination, StudentCourses])
@@ -150,13 +142,15 @@ def on_model(model):
 #on_model function will be triggered every time a model is found
 ctrl.solve(on_model = on_model)        
 
-final_model = None
+final_model = []
 def on_check_model(model):  
     global final_model  
-    final_model = model.facts(atoms = True)
+    if model.optimality_proven:
+        sol = model.facts(atoms = True)
+        final_model.append(sol)
 
 def checkScheduling():
-    ctrl2 = Control(unifier=[Timeslot, Module, Examiner, Student, Examinerschedule, Course, Availability, Examination, StudentCourses])
+    ctrl2 = Control(unifier=[Timeslot, Module, Examiner, Student, Examinerschedule, Course, Availability, StudentCourses, Examination, Penalty])
     ctrl2.configuration.keys
     ['tester', 'solve', 'asp', 'solver', 'configuration', 'share',
     'learn_explicit', 'sat_prepro', 'stats', 'parse_ext', 'parse_maxsat', 'time_limit']
@@ -164,8 +158,8 @@ def checkScheduling():
     ['solve_limit', 'parallel_mode', 'global_restarts', 'distribute',
     'integrate', 'enum_mode', 'project', 'models', 'opt_mode']
     'Compute at most %A models (0 for all)\n'
-    #limit the number of models to 10
-    ctrl2.configuration.solve.models = 200
+    ctrl2.configuration.solve.opt_mode = "optN"
+    ctrl2.configuration.solve.models = 1
     ctrl2.load("scheduling2.lp")
     ctrl2.add_facts(instance)
     ctrl2.ground([("base", [])])
@@ -175,13 +169,16 @@ def checkScheduling():
 if solutions==[]:  
     # if no solution then run another lp file with choice rule for examination and without optimizations  
     checkScheduling()
-    all_students = set(final_model.query(Student).select(Student.student_id).all())
-    pos_ex_query = final_model.query(Examination)
-    assigned_students = set(pos_ex_query.select(Examination.student_id).all())
-    df = pd.DataFrame(columns=['Date', 'Start Time', 'End Time', 'Examiner', 'Student', 'Module'], data = list(pos_ex_query.all()))
-    print("----!!!NOT ABLE TO SCHEDULE EXAMINATIONS FOR ALL STUDENTS!!!----")
-    print(f"Remaining students: {all_students - assigned_students}")
-    print(df)
+    for model in final_model:
+        # print(model)
+        all_students = set(model.query(Student).select(Student.student_id).all())
+        pos_ex_query = model.query(Examination)
+        assigned_students = set(pos_ex_query.select(Examination.student_id).all())
+        # print(list(model.query(Penalty).all()))
+        df = pd.DataFrame(columns=['Date', 'Start Time', 'End Time', 'Examiner', 'Student', 'Module'], data = list(pos_ex_query.all()))
+        print("----!!!NOT ABLE TO SCHEDULE EXAMINATIONS FOR ALL STUDENTS!!!----")
+        print(f"Remaining students: {all_students - assigned_students}")
+        print(df)
 else:
     for sol in solutions:
         print(f"\n\n\t\t--------- SOLUTION :: {solutions.index(sol)+1} -----------\n")
