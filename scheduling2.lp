@@ -17,6 +17,4 @@ module(M, Dur, Course), studentCourses(SID, Course).
 unassigned(SID) :- student(SID, _, _), not examination(_, _, _, _, SID, _).
 
 penalty(N) :- N = #count{SID : unassigned(SID)}.
-
-
 #minimize{N:penalty(N)}.

@@ -64,17 +64,32 @@ class Examination(Predicate):
 class Penalty(Predicate):
     s = ConstantField
 
-#Control object controls the operations of ASP solver, unifier specifies which symbols turn into pred instances
-ctrl = Control(unifier=[Timeslot, Module, Examiner, Student, Examinerschedule, Course, Availability, Examination, StudentCourses])
-ctrl.configuration.keys
-['tester', 'solve', 'asp', 'solver', 'configuration', 'share',
- 'learn_explicit', 'sat_prepro', 'stats', 'parse_ext', 'parse_maxsat', 'time_limit']
-ctrl.configuration.solve.keys
-['solve_limit', 'parallel_mode', 'global_restarts', 'distribute',
- 'integrate', 'enum_mode', 'project', 'models', 'opt_mode']
-'Compute at most %A models (0 for all)\n'
-ctrl.load("scheduling.lp")
+def schedulingControl():
+    #Control object controls the operations of ASP solver, unifier specifies which symbols turn into pred instances
+    ctrl = Control(unifier=[Timeslot, Module, Examiner, Student, Examinerschedule, Course, Availability, Examination, StudentCourses])
+    ctrl.configuration.keys
+    ['tester', 'solve', 'asp', 'solver', 'configuration', 'share',
+    'learn_explicit', 'sat_prepro', 'stats', 'parse_ext', 'parse_maxsat', 'time_limit']
+    ctrl.configuration.solve.keys
+    ['solve_limit', 'parallel_mode', 'global_restarts', 'distribute',
+    'integrate', 'enum_mode', 'project', 'models', 'opt_mode']
+    'Compute at most %A models (0 for all)\n'
+    ctrl.load("scheduling.lp")
+    return ctrl
 
+def schedulingCheckControl():
+    ctrl = Control(unifier=[Timeslot, Module, Examiner, Student, Examinerschedule, Course, Availability, StudentCourses, Examination, Penalty])
+    ctrl.configuration.keys
+    ['tester', 'solve', 'asp', 'solver', 'configuration', 'share',
+    'learn_explicit', 'sat_prepro', 'stats', 'parse_ext', 'parse_maxsat', 'time_limit']
+    ctrl.configuration.solve.keys
+    ['solve_limit', 'parallel_mode', 'global_restarts', 'distribute',
+    'integrate', 'enum_mode', 'project', 'models', 'opt_mode']
+    'Compute at most %A models (0 for all)\n'
+    ctrl.configuration.solve.opt_mode = "optN"
+    ctrl.configuration.solve.models = 1
+    ctrl.load("scheduling2.lp")
+    return ctrl
 
 timeslot_csv = open("timeslots.csv", "r")
 timeslot_data = list(csv.DictReader(timeslot_csv, delimiter=";"))
@@ -84,21 +99,21 @@ for slot in timeslot_data:
     timeslots.append(Timeslot(date=datetime.datetime.strptime(slot['Date'], '%Y,%m,%d').date(), start_time=datetime.datetime.strptime(slot['Start_Time'], '%H,%M').time(), end_time=datetime.datetime.strptime(slot['End_Time'], '%H,%M').time()))
 
 course_csv = open("courses.csv", "r")
-course_data = list(csv.DictReader(course_csv, delimiter=","))
+course_data = list(csv.DictReader(course_csv, delimiter=";"))
 course_csv.close()
 course = []
 for item in course_data:
     course.append(Course(course_id=item['Course_id'], examiner_id=item['Examiner']))
 
 module_csv = open("modules.csv", "r")
-module_data = list(csv.DictReader(module_csv, delimiter=","))
+module_data = list(csv.DictReader(module_csv, delimiter=";"))
 module_csv.close()
 module = []
 for item in module_data:
     module.append(Module(mod_code = item['Module_code'], exam_len = int(item['Duration']), course_id = item['Course_ID']))
 
 examiner_csv = open("examiners.csv", "r")
-examiner_data = list(csv.DictReader(examiner_csv, delimiter=","))
+examiner_data = list(csv.DictReader(examiner_csv, delimiter=";"))
 examiner_csv.close()
 examiner = []
 for item in examiner_data:
@@ -113,22 +128,23 @@ for item in examiner_schedule_data:
         end_time=datetime.datetime.strptime(item['To'], '%H,%M').time()))
 
 student_csv = open("students.csv", "r")
-student_data = list(csv.DictReader(student_csv, delimiter=","))
+student_data = list(csv.DictReader(student_csv, delimiter=";"))
 student_csv.close()
 student = []
 for item in student_data:
     student.append(Student(student_id = item['ID'], name = item['Name'], module_code = item['Module']))
 
 student_courses_csv = open("student_course.csv", "r")
-student_course_data = list(csv.DictReader(student_courses_csv, delimiter=","))
+student_course_data = list(csv.DictReader(student_courses_csv, delimiter=";"))
 student_courses = []
 for item in student_course_data:
     student_courses.append(StudentCourses(student_id=item['ID'], course_id=item['Course']))
 
 instance = FactBase(timeslots + module + examiner + student + examiner_schedule + course + student_courses)
 
-ctrl.add_facts(instance)
-ctrl.ground([("base", [])])
+ctrl1 = schedulingControl()
+ctrl1.add_facts(instance)
+ctrl1.ground([("base", [])])
 
 solutions = []
 count=0
@@ -140,7 +156,7 @@ def on_model(model):
     solutions.append(solution)
 
 #on_model function will be triggered every time a model is found
-ctrl.solve(on_model = on_model)        
+ctrl1.solve(on_model = on_model)        
 
 final_model = []
 def on_check_model(model):  
@@ -150,17 +166,7 @@ def on_check_model(model):
         final_model.append(sol)
 
 def checkScheduling():
-    ctrl2 = Control(unifier=[Timeslot, Module, Examiner, Student, Examinerschedule, Course, Availability, StudentCourses, Examination, Penalty])
-    ctrl2.configuration.keys
-    ['tester', 'solve', 'asp', 'solver', 'configuration', 'share',
-    'learn_explicit', 'sat_prepro', 'stats', 'parse_ext', 'parse_maxsat', 'time_limit']
-    ctrl2.configuration.solve.keys
-    ['solve_limit', 'parallel_mode', 'global_restarts', 'distribute',
-    'integrate', 'enum_mode', 'project', 'models', 'opt_mode']
-    'Compute at most %A models (0 for all)\n'
-    ctrl2.configuration.solve.opt_mode = "optN"
-    ctrl2.configuration.solve.models = 1
-    ctrl2.load("scheduling2.lp")
+    ctrl2 = schedulingCheckControl()
     ctrl2.add_facts(instance)
     ctrl2.ground([("base", [])])
     ctrl2.solve(on_model = on_check_model)     
