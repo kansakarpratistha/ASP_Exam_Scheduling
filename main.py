@@ -74,6 +74,8 @@ def schedulingControl():
     ['solve_limit', 'parallel_mode', 'global_restarts', 'distribute',
     'integrate', 'enum_mode', 'project', 'models', 'opt_mode']
     'Compute at most %A models (0 for all)\n'
+    ctrl.configuration.solve.opt_mode = "optN"
+    ctrl.configuration.solve.models = 1
     ctrl.load("scheduling.lp")
     return ctrl
 
@@ -141,7 +143,7 @@ for item in student_course_data:
     student_courses.append(StudentCourses(student_id=item['ID'], course_id=item['Course']))
 
 instance = FactBase(timeslots + module + examiner + student + examiner_schedule + course + student_courses)
-
+print(instance)
 ctrl1 = schedulingControl()
 ctrl1.add_facts(instance)
 ctrl1.ground([("base", [])])
@@ -152,6 +154,7 @@ def on_model(model):
     global count
     global solutions
     count += 1
+    print(model.optimality_proven)
     solution = model.facts(atoms =True)
     solutions.append(solution)
 
