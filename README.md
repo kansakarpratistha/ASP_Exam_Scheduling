@@ -22,9 +22,13 @@ This project focuses on scheduling complex examinations using the ASP (Answer Se
 
 ## Usage
 
-- To run the tool, execute the following command:
+- To run the tool in command line, execute the following command:
     ```bash
     py main.py
+
+- To run the tool with UI in localhost, execute the following command:
+    ```bash
+    streamlit run scheduler.py
 
 ## Dependencies
 
