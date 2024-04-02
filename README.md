@@ -35,7 +35,7 @@ This project focuses on scheduling complex examinations using the ASP (Answer Se
 The project depends on the following Python packages:
 - `clorm==1.4.2`
 - `pandas==2.0.3`
-- `streamlit==1.28.2`
+- `streamlit==1.32.0`
 - `streamlit-multipage==0.0.18`
 
 *Currently only command line version is available. User interface is under development using Streamlit library.*

@@ -1,6 +1,5 @@
 import streamlit as st
 import datetime
-from clorm import Predicate, ConstantField, IntegerField, FactBase, ph1_, StringField
 from examiner_input import ExaminerInput
 from timeslot_input import TimeslotInput
 from course_input import CourseInput
@@ -10,16 +9,15 @@ import pandas as pd
 
 def inputData():
 
-    st.header("Input Data")
-    st.write('---')
+    st.header(":blue[Input Data]")
+    st.markdown('---')
     timeslot, examiner, course, module, student = st.tabs(["Timeslots", "Examiners", "Courses", "Modules", "Student"])
     with timeslot:
         Timeslot = TimeslotInput()
         st.header("Add Timeslots")
-        def_timeslots = open('timeslots.csv', "r").read()
         timeslots_csv = st.file_uploader("Choose a CSV file", accept_multiple_files=False, key="timeslots_input")
         if timeslots_csv is None:
-            timeslots_csv = "timeslots.csv"
+            timeslots_csv = "input_data/timeslots.csv"
             defaultDataPreview(timeslots_csv)
             timeslots = pd.read_csv(timeslots_csv, sep=';')
         else:
@@ -36,7 +34,7 @@ def inputData():
         st.subheader("Add Examiners")
         examiners_csv = st.file_uploader("Choose a CSV file", accept_multiple_files=False, key="examiner_input")
         if examiners_csv is None:
-            examiners_csv = "examiners.csv"
+            examiners_csv = "input_data/examiners.csv"
             defaultDataPreview(examiners_csv)
             examiners = pd.read_csv(examiners_csv, sep=';')
         else:
@@ -51,12 +49,12 @@ def inputData():
         st.subheader("Examiner Schedule")
         schedules_csv = st.file_uploader("Choose a CSV file", accept_multiple_files=False, key="schedules_input")
         if schedules_csv is None:
-            schedules_csv = 'examiner_schedules.csv'
+            schedules_csv = 'input_data/examiner_schedules.csv'
             defaultDataPreview(schedules_csv)
             schedules = pd.read_csv(schedules_csv, sep=';')
         else:
             schedules = pd.read_csv(schedules_csv, sep=";")
-        add_availability = st.button("ADD Availability", key="e_avail_add")
+        add_availability = st.button("ADD", key="e_avail_add")
         if add_availability:
             if schedules_csv:
                 schedules_li = Examiner.addSchedule(schedules)
@@ -70,7 +68,7 @@ def inputData():
 
         courses_csv = st.file_uploader("Choose a CSV file", accept_multiple_files=False, key="courses_input")
         if courses_csv is None:
-            courses_csv = 'courses.csv'
+            courses_csv = 'input_data/courses.csv'
             defaultDataPreview(courses_csv)
             courses = pd.read_csv(courses_csv, sep=';')
         else:
@@ -87,13 +85,13 @@ def inputData():
         st.subheader("Add Modules")
         modules_csv = st.file_uploader("Choose a CSV file", accept_multiple_files=False, key="modules_input")
         if modules_csv is None:
-            modules_csv = 'modules.csv'
+            modules_csv = 'input_data/modules.csv'
             defaultDataPreview(modules_csv)
             modules = pd.read_csv(modules_csv, sep=";")
         else:
             modules = pd.read_csv(modules_csv, sep=";")
 
-        add_module = st.button("ADD Module", key="m_add")
+        add_module = st.button("ADD", key="m_add")
         if add_module:
             modules_li = Module.addModule(modules)
             st.session_state['modules'] = modules_li
@@ -105,13 +103,13 @@ def inputData():
 
         students_csv = st.file_uploader("Choose a CSV file", accept_multiple_files=False, key="students_input")
         if students_csv is None:
-            students_csv = 'students.csv'
+            students_csv = 'input_data/students.csv'
             defaultDataPreview(students_csv)
             students = pd.read_csv(students_csv, sep=";")
         else:
             students = pd.read_csv(students_csv, sep=";")
         
-        add_students = st.button("ADD Student", key="s_add")
+        add_students = st.button("ADD", key="s_add")
         if add_students:
             if students_csv:
                 students_li = Student.addStudent(students)
@@ -121,21 +119,21 @@ def inputData():
         st.subheader("Add Student's Registered Courses")
         student_courses_csv = st.file_uploader("Choose a CSV file", accept_multiple_files=False, key="student_courses_input")
         if student_courses_csv is None:
-            student_courses_csv = 'student_course.csv'
+            student_courses_csv = 'input_data/student_course.csv'
             defaultDataPreview(student_courses_csv)
             student_courses = pd.read_csv(student_courses_csv, sep=";")
         else:
             student_courses = pd.read_csv(student_courses_csv, sep=";")
         
-        add_student_courses = st.button("ADD Student Courses", key="sc_add")
+        add_student_courses = st.button("ADD", key="sc_add")
         if add_student_courses:
             if student_courses_csv:
                 student_courses_li = Student.addStudentCourse(student_courses)
                 st.session_state['student_courses'] = student_courses_li
 
-def defaultDataPreview(filepath):
+def defaultDataPreview(csvFile):
     lines=[]
-    with open(filepath, 'r') as file:
+    with open(csvFile, 'r') as file:
         for _ in range(4):
             line = file.readline()
             if not line:

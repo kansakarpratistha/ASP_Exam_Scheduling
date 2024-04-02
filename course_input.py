@@ -1,5 +1,4 @@
 from main import Course
-import csv
 
 class CourseInput:
     def addCourse(self, courses_data):
